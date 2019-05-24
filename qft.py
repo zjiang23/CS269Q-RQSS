@@ -5,6 +5,9 @@
 '''
 
 import numpy as np
+from typing import Tuple, List
+from pyquil import Program
+from pyquil.gates import *
 
 ########################################
 # For Reference
@@ -22,11 +25,49 @@ def classical_iqft(j, d):
 
 
 ########################################
+# Helper PyQuil Wrappers
+########################################
+
+# Reference: http://www-bcf.usc.edu/~tbrun/Course/lecture13.pdf (Page 10)
+def Rk_mat(k):
+	return np.array([[1, 0], [0, (2*np.pi*1j) / (2**k)]]) 
+
+def RK_gate(k):
+	# Get the Quil definition for the new gate
+	Rk_definition = DefGate("Rk", Rk_mat(k))
+	# Get the gate constructor
+	RK = Rk_definition.get_constructor()
+	return RK, Rk_definition
+
+# Reference: http://www-bcf.usc.edu/~tbrun/Course/lecture13.pdf (Page 10)
+def QFT_mat(n):
+	omega = np.exp(2.0 * np.pi * 1j / n)
+	mat = np.ones((n, n))
+	for i in range(1, n):
+		for j in range(i, n):
+			mat[i][j] *= omega
+	return mat
+
+def QFT_gate(n):
+	# Get the Quil definition for the new gate
+	QFT_definition = DefGate("QFT", QFT_mat(k))
+	# Get the gate constructor
+	QFT = QFT_definition.get_constructor()
+	return QFT, QFT_definition
+
+########################################
 # Quantum Implemenations
 ########################################
 
-def qft(j, d):
-	pass
+# Fourier Transform
+def qft(phi, n):
+	pq = Program()
+	QFT, QFT_definition = QFT_gate(n)
+	pq += QFT_definition
+	pq += QFT(phi)
+	return pq
 
+# Inverse Fourier Transform
 def iqft(j, d):
 	pass
+
