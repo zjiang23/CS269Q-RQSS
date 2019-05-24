@@ -5,6 +5,7 @@
 '''
 
 import numpy as np
+import math
 from typing import Tuple, List
 from pyquil import Program
 from pyquil.gates import *
@@ -46,7 +47,7 @@ def QFT_mat(n):
 	for i in range(1, n):
 		for j in range(i, n):
 			mat[i][j] *= omega
-	return mat
+	return mat / math.sqrt(float(n))
 
 def QFT_gate(n):
 	# Get the Quil definition for the new gate
