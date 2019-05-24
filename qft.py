@@ -40,7 +40,7 @@ def RK_gate(k):
 	RK = Rk_definition.get_constructor()
 	return RK, Rk_definition
 
-# Reference: http://www-bcf.usc.edu/~tbrun/Course/lecture13.pdf (Page 10)
+# Reference: https://courses.edx.org/c4x/BerkeleyX/CS191x/asset/chap5.pdf (Page 2)
 def QFT_mat(n):
 	omega = np.exp(2.0 * np.pi * 1j / n)
 	mat = np.ones((n, n))
@@ -56,6 +56,21 @@ def QFT_gate(n):
 	QFT = QFT_definition.get_constructor()
 	return QFT, QFT_definition
 
+def IQFT_mat(n):
+	omega = np.exp(2.0 * np.pi * 1j / n)
+	mat = np.ones((n, n))
+	for i in range(1, n):
+		for j in range(i, n):
+			mat[i][j] /= omega
+	return mat / math.sqrt(float(n))
+
+def IQFT_gate(n):
+	# Get the Quil definition for the new gate
+	IQFT_definition = DefGate("IQFT", IQFT_mat(k))
+	# Get the gate constructor
+	IQFT = IQFT_definition.get_constructor()
+	return IQFT, IQFT_definition
+
 ########################################
 # Quantum Implemenations
 ########################################
@@ -69,6 +84,10 @@ def qft(phi, n):
 	return pq
 
 # Inverse Fourier Transform
-def iqft(j, d):
-	pass
+def iqft(phi, n):
+	pq = Program()
+	IQFT, IQFT_definition = IQFT_gate(n)
+	pq += IQFT_definition
+	pq += IQFT(phi)
+	return pq
 
