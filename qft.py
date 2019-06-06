@@ -47,24 +47,12 @@ def RK_gate(k):
 def QFT_mat(n):
 	omega = np.exp(2.0 * np.pi * 1j / n)
 	mat = np.ones((n, n), dtype=complex)
-	# for i in range(1, n):
-	# 	for j in range(i, n):
-	# 		mat[i][j] *= omega
 	
-	# for i in range(1, n):
-	# 	mat[i:, i:] = mat[i:, i:] * omega
-
 	for i in range(1, n):
 		for j in range(1, n):
 			mat[i, j] = omega ** (i * j)
 
 	mat /= math.sqrt(float(n))
-	# print(mat)
-	# print("=======")
-	# print(mat.conj().T)
-	# print("=======")
-	# print(mat * mat.conj().T)
-	# print("=======")
 	return mat
 
 def QFT_gate(n):
@@ -77,19 +65,12 @@ def QFT_gate(n):
 def IQFT_mat(n):
 	omega = np.exp(2.0 * np.pi * 1j / n)
 	mat = np.ones((n, n), dtype=complex)
-	# for i in range(1, n):
-	# 	for j in range(i, n):
-	# 		mat[i][j] /= omega
-	
-	# for i in range(n):
-	# 	mat[i:][i:] = mat[i:][i:] / omega
 	
 	for i in range(1, n):
 		for j in range(1, n):
 			mat[i, j] = omega ** (-i * j)
 
 	mat /= math.sqrt(float(n))
-	# print(mat)
 	return mat
 
 def IQFT_gate(n):
@@ -129,24 +110,15 @@ def init_pure(p: List[QubitPlaceholder]) -> Program:
         pq += X(p[i])
     return pq
 
-def qft_test(n=4):
+def qft_tests(n=4):
     phi = [QubitPlaceholder() for i in range(n)]
-    pq = init_pure(phi)
-    pq += H(phi[0])
+    tests = [
+    	init_pure(phi) + H(phi[0]) + qft(phi, n) + iqft(phi, n), # Should be H(0)
+    	init_pure(phi) + iqft(phi, n) + qft(phi, n), # Should be pure |1>'s
+    ]
     wf_sim = WavefunctionSimulator()
-    print(wf_sim.wavefunction(address_qubits(pq)))
-    pq += qft(phi, n)
-    print(wf_sim.wavefunction(address_qubits(pq)))
-    pq += iqft(phi, n)
-    print(wf_sim.wavefunction(address_qubits(pq)))
-    print("=====================================")
-    pq = init_pure(phi)
-    wf_sim = WavefunctionSimulator()
-    print(wf_sim.wavefunction(address_qubits(pq)))
-    pq += iqft(phi, n)
-    print(wf_sim.wavefunction(address_qubits(pq)))
-    pq += qft(phi, n)
-    print(wf_sim.wavefunction(address_qubits(pq)))
+    for test in tests:
+    	print(wf_sim.wavefunction(address_qubits(test)))
 
 if __name__ == "__main__":
-	qft_test()
+	qft_tests()
