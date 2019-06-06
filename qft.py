@@ -9,21 +9,23 @@ import math
 from typing import Tuple, List
 from pyquil import Program
 from pyquil.gates import *
+from pyquil.quilatom import QubitPlaceholder
+from pyquil.api import WavefunctionSimulator
+from pyquil.quil import address_qubits, DefGate
 
 ########################################
 # For Reference
 ########################################
 
 def classical_qft(j, d):
-    k_vec = lambda k : np.array([0 for i in range(d) if i != k else 1])
+    k_vec = lambda k : np.array([0 if i != k else 1 for i in range(d)])
     omega = 2.0 * np.pi * 1j / d
     return (1.0 / np.sqrt(d)) * np.sum([omega ** (k * j) * k_vec(k) for k in range(d)])
 
 def classical_iqft(j, d):
-    k_vec = lambda k : np.array([0 for i in range(d) if i != k else 1])
+    k_vec = lambda k : np.array([0 if i != k else 1 for i in range(d)])
     omega = 2.0 * np.pi * 1j / d
     return (1.0 / np.sqrt(d)) * np.sum([omega ** (-k * j) * k_vec(k) for k in range(d)])
-
 
 ########################################
 # Helper PyQuil Wrappers
@@ -43,30 +45,36 @@ def RK_gate(k):
 # Reference: https://courses.edx.org/c4x/BerkeleyX/CS191x/asset/chap5.pdf (Page 2)
 def QFT_mat(n):
     omega = np.exp(2.0 * np.pi * 1j / n)
-    mat = np.ones((n, n))
+    mat = np.ones((n, n), dtype=complex)
+    
     for i in range(1, n):
-        for j in range(i, n):
-            mat[i][j] *= omega
-    return mat / math.sqrt(float(n))
+        for j in range(1, n):
+            mat[i, j] = omega ** (i * j)
+
+    mat /= math.sqrt(float(n))
+    return mat
 
 def QFT_gate(n):
     # Get the Quil definition for the new gate
-    QFT_definition = DefGate("QFT", QFT_mat(k))
+    QFT_definition = DefGate("QFT", QFT_mat(2 ** n))
     # Get the gate constructor
     QFT = QFT_definition.get_constructor()
     return QFT, QFT_definition
 
 def IQFT_mat(n):
     omega = np.exp(2.0 * np.pi * 1j / n)
-    mat = np.ones((n, n))
+    mat = np.ones((n, n), dtype=complex)
+    
     for i in range(1, n):
-        for j in range(i, n):
-            mat[i][j] /= omega
-    return mat / math.sqrt(float(n))
+        for j in range(1, n):
+            mat[i, j] = omega ** (-i * j)
+
+    mat /= math.sqrt(float(n))
+    return mat
 
 def IQFT_gate(n):
     # Get the Quil definition for the new gate
-    IQFT_definition = DefGate("IQFT", IQFT_mat(k))
+    IQFT_definition = DefGate("IQFT", IQFT_mat(2 ** n))
     # Get the gate constructor
     IQFT = IQFT_definition.get_constructor()
     return IQFT, IQFT_definition
@@ -91,6 +99,31 @@ def iqft(phi, n):
     pq = Program()
     IQFT, IQFT_definition = IQFT_gate(n)
     pq += IQFT_definition
-    pq += IQFT(phi)
+    if isinstance(phi, List):
+        pq += IQFT(*phi)
+    else:
+        pq += IQFT(phi)
     return pq
 
+########################################
+# Tests
+########################################
+
+def init_pure(p: List[QubitPlaceholder]) -> Program:
+    pq = Program()
+    for i in range(len(p)):
+        pq += X(p[i])
+    return pq
+
+def qft_tests(n=4):
+    phi = [QubitPlaceholder() for i in range(n)]
+    tests = [
+        init_pure(phi) + H(phi[0]) + qft(phi, n) + iqft(phi, n), # Should be H(0)
+        init_pure(phi) + iqft(phi, n) + qft(phi, n), # Should be pure |1>'s
+    ]
+    wf_sim = WavefunctionSimulator()
+    for test in tests:
+        print(wf_sim.wavefunction(address_qubits(test)))
+
+if __name__ == "__main__":
+    qft_tests()
