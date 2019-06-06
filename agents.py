@@ -1,4 +1,4 @@
-from typing import List, Callable, Union, Tuple
+from typing import Dict, List, Callable, Union, Tuple
 from pyquil.quilatom import QubitPlaceholder
 from pyquil import Program
 from pyquil.gates import RX, RY, RZ, X, Y, Z, H, CNOT
@@ -8,7 +8,7 @@ from entangle import init_p, entangle, disentangle
 import numpy as np
 
 Q = Union[int, QubitPlaceholder]
-QubitShare = Tuple[Q, int]
+QubitShare = Tuple[Q, int] # (Qubit, Entangling set the qubit is from)
 QubitShareList = List[QubitShare]
 QubitShareMatrix = List[QubitShareList]
 
@@ -56,9 +56,38 @@ class Alice:
                 self.protocol += self.secret_ansatz(qubit_list[0])
             else:
                 self.protocol += self.tester_ansatz(qubit_list[0])
-            self.protocol += iqft(qubit_list[0])
+            self.protocol += iqft(qubit_list[0], 1)
             self.protocol += entangle(qubit_list[0], qubit_list[1:])
+            self.protocol += qft(qubit_list, num_bobs)
         return self.roll_matrix(q_mat)
+
+class Bob:
+    def __init__(self, shares: QubitShareList, bob_map: Dict, self_id: int):
+        self.shares = shares
+        self.bob_map = bob_map
+        self.id = self_id
+
+        self.protocol = Program()
+
+        self.received_shares = [None for i in range(len(shares))]
+        self.received_shares[0] = self.shares[0][0]
+
+    def receive_share(self, share: QubitShare, qubit_idx: int):
+        self.received_shares[qubit_idx] = self.share[0]
+
+    def distribute_all_shares(self):
+        for share_idx, share in enumerate(self.shares):
+            bob_map[share[1]].receive_share(share, share_idx)
+
+    def retrieve(self, num_bobs: int) -> Program:
+        # Assert: Has received all components for the target entanglement set
+        assert None not in self.received_shares, \
+            "Bob #" + str(self.id) + ": retrieve() attempted without receiving all shares"
+
+        self.protocol += iqft(self.received_shares, num_bobs)
+        self.protocol += disentangle(self.received_shares[0], self.received_shares[1:])
+        self.protocol += qft(self.received_shares[0], 1)
+
 
 # class Alice:
 #     def __init__(self, secret_ansatz: Callable[[List[Q]], Program], prob_real: float = 0.4):
