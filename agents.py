@@ -19,6 +19,7 @@ class Alice:
         self.secret_ansatz = secret_ansatz
         self.prob_real = prob_real
         self.protocol = Program()
+        self.q_mat = None
         self.secret_revealed = False
 
     def roll_matrix(self, matrix):
@@ -45,14 +46,14 @@ class Alice:
         return pq
 
     def generate_qubit_matrix(self, num_bobs: int) -> List[QubitShareList]:
-        return [[(QubitPlaceholder(), bob) for qubit in range(num_bobs)] for bob in range(num_bobs)]
+        self.q_mat = [[(QubitPlaceholder(), bob) for qubit in range(num_bobs)] for bob in range(num_bobs)]
 
     def deal_shares(self, num_bobs: int) -> QubitShareMatrix:
-        q_mat = self.generate_qubit_matrix(num_bobs)
+        self.generate_qubit_matrix(num_bobs)
         if random() < self.prob_real:
             self.secret_revealed = True
         for bob in range(num_bobs):
-            qubit_list = [q[0] for q in q_mat[bob]]
+            qubit_list = [q[0] for q in self.q_mat[bob]]
             self.protocol += init_p(qubit_list[1:])
             if self.secret_revealed:
                 self.protocol += self.secret_ansatz(qubit_list[0])
@@ -61,7 +62,10 @@ class Alice:
             self.protocol += iqft(qubit_list[0], 1)
             self.protocol += entangle(qubit_list[0], qubit_list[1:])
             self.protocol += qft(qubit_list, num_bobs)
-        return self.roll_matrix(q_mat)
+        return self.roll_matrix(self.q_mat)
+
+    def reset(self):
+        self.protocol = Program()
 
 
 class Bob:
