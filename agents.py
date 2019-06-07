@@ -78,7 +78,7 @@ class Bob:
         self.bob_map = bob_map
 
     def receive_share(self, share: QubitShare, qubit_idx: int):
-        self.received_shares[qubit_idx] = self.share[0]
+        self.received_shares[qubit_idx] = share[0]
 
     def distribute_all_shares(self):
         assert self.bob_map is not None, "You must set bob map before distributing shares."
