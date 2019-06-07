@@ -67,11 +67,12 @@ class Alice:
 		return self.roll_matrix(self.q_mat)
 
 	def reset(self):
-			self.protocol = Program()
+		self.protocol = Program()
 
 
 class Bob:
-	def __init__(self, shares: QubitShareList, memory: List[MemoryReference], self_id: int, is_cheater: bool = False):
+	def __init__(self, shares: QubitShareList, memory: List[MemoryReference], self_id: int,
+				 is_consistent_cheater: bool = False, is_random_cheater: bool = False):
 		self.shares = shares
 		self.bob_map = None
 		self.id = self_id
@@ -79,7 +80,29 @@ class Bob:
 		self.received_shares = [None for _ in range(len(shares))]
 		self.received_shares[0] = self.shares[0][0]
 		self.memory = memory
-		self.is_cheater = is_cheater
+		self.is_consistent_cheater = is_consistent_cheater
+		self.is_random_cheater = is_random_cheater
+
+	def consistent_cheating_ansatz(self, qubit: Q, gate = H) -> Program:
+		pq = Program()
+		pq += gate(qubit)
+		return pq
+
+	def random_cheating_ansatz(self, qubit: Q, len_ansatz: int = 50) -> Program:
+		angles = np.arange(0, np.pi, np.pi / 16)
+		rotation_gates = [RX, RY, RZ]
+		flip_gates = [X, Y, Z, H]
+		pq = Program()
+		for _ in range(len_ansatz):
+			action = random()
+			if action < 0.4:
+				gate = np.random.choice(rotation_gates)
+				angle = np.random.choice(angles)
+				pq += gate(angle, qubit)
+			elif action < 1:
+				gate = np.random.choice(flip_gates)
+				pq += gate(qubit)
+		return pq 
 
 	def set_bob_map(self, bob_map: Dict):
 		self.bob_map = bob_map
@@ -90,8 +113,10 @@ class Bob:
 	def distribute_all_shares(self):
 		assert self.bob_map is not None, "You must set bob map before distributing shares."
 		for share_idx, share in enumerate(self.shares):
-			if self.is_cheater:
-				self.protocol += X(share[0])
+			if self.is_consistent_cheater:
+				self.protocol += self.random_cheating_ansatz(share[0])
+			elif self.is_random_cheater:
+				self.protocol += self.consistent_cheating_ansatz(share[0])
 			self.bob_map[share[1]].receive_share(share, share_idx)
 
 	def retrieve(self, num_bobs: int) -> Program:
@@ -105,3 +130,7 @@ class Bob:
 		wf_sim = WavefunctionSimulator()
 		for i, share in enumerate(self.received_shares):
 			self.protocol += MEASURE(share, self.memory[i])
+
+	def reset(self):
+		self.protocol = Program()
+		self.received_shares = [None for _ in range(len(self.shares))]
