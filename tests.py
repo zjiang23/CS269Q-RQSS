@@ -79,7 +79,6 @@ def run(secret_ansatz: Callable[[Q], Program],
 
 
 def tests():
-	# print(args)
 	secret_ansatzs = [
 		#lambda q: Program() + X(q),
 		lambda q: Program() + X(q) + H(q)
@@ -124,25 +123,6 @@ def tests():
 								secret_ansatz=secret_ansatz, num_bobs=num_bobs,
 								verification_program=verification_program, random_cheating_bobs=[i])
 
-				# print("=" * 70)
-				# print("Running test with 1 Alice and {} Bobs, and no cheating Bobs:".format(num_bobs))
-				# print("-" * 70)
-				# run(secret_ansatz=secret_ansatz, num_bobs=num_bobs, verification_program=verification_program)
-				# print("=" * 70)
-				# print()
-				# for i in range(num_bobs):
-				# 	print("=" * 70)
-				# 	print("Running test with 1 Alice and {} Bobs, such that Bob{} cheats with consistent program:".format(num_bobs, i))
-				# 	print("-" * 70)
-				# 	run(secret_ansatz=secret_ansatz, num_bobs=num_bobs, verification_program=verification_program, consistent_cheating_bobs=[i])
-				# 	print("=" * 70)
-				# 	print()
-				# 	print("=" * 70)
-				# 	print("Running test with 1 Alice and {} Bobs, such that Bob{} cheats with random program:".format(num_bobs, i))
-				# 	print("-" * 70)
-				# 	run(secret_ansatz=secret_ansatz, num_bobs=num_bobs, verification_program=verification_program, random_cheating_bobs=[i])
-				# 	print("=" * 70)
-
 			elif args.test_cheating:
 				def list_to_string(l):
 					if len(l) < 0:
@@ -160,15 +140,6 @@ def tests():
 
 				combination_run(secret_ansatz=secret_ansatz, num_bobs=num_bobs, verification_program=verification_program,
 								consistent_cheating_bobs=args.consistent_prog_cheaters, random_cheating_bobs=args.random_prog_cheaters)
-				# print("=" * 70)
-				# print("Running test with 1 Alice and {} Bobs,\n".format(num_bobs) +
-				# 		"such that Bobs {} cheat with a consistent program\n".format(list_to_string(args.consistent_prog_cheaters)) +
-				# 		"and {} with a random program:".format(list_to_string(args.random_prog_cheaters)))
-				# print("-" * 70)
-				# run(secret_ansatz=secret_ansatz, num_bobs=num_bobs, verification_program=verification_program,
-				# 	consistent_cheating_bobs=args.consistent_prog_cheaters, random_cheating_bobs=args.random_prog_cheaters)
-				# print("=" * 70)
-				# print()
 
 			else:
 				print("=" * 70)
@@ -183,12 +154,9 @@ if __name__ == "__main__":
 	parser.add_argument('-a', '--run_all', action='store_true', help='flag to run all tests')
 	parser.add_argument('-n', '--num_bobs', metavar='n', type=int, default=3, help='number of Bobs (receiving agents) [default: 3]')
 	parser.add_argument('-cheat', '--test_cheating', action='store_true', help='flag to test cheating [default: False]')
-	# parser.add_argument('-c', '--consistent_prog_cheaters', type=list, default=[], help='indices of Bobs who cheat with consistent program [default: []]')
 	parser.add_argument('-c', '--consistent_prog_cheaters', nargs='*', type=int, help='indices of Bobs who cheat with consistent program [default: []]')
-	# parser.add_argument('-r', '--random_prog_cheaters', type=list, default=[], help='indices of Bobs who cheat with random program [default: []]')
 	parser.add_argument('-r', '--random_prog_cheaters', nargs='*', type=int, help='indices of Bobs who cheat with random program [default: []]')
 	parser.add_argument('-v', '--verbose', action='store_true', help='print progress [default: False]')
 
 	args = parser.parse_args()
-	# print(args)
 	tests()
