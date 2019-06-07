@@ -11,6 +11,7 @@ from agents import Alice, Bob
 
 import numpy as np
 import argparse
+from collections import Counter
 
 Q = Union[int, QubitPlaceholder]
 
@@ -21,6 +22,7 @@ def run(secret_ansatz: Callable[[Q], Program],
 		verification_program: Callable[[np.array], bool] = lambda x: False,
 		consistent_cheating_bobs: list = [],
 		random_cheating_bobs: list = []):
+	results = {"True Positives": 0, "False Positives": 0, "True Negatives": 0, "False Negatives": 0}
 	alice = Alice(secret_ansatz, prob_real=alice_prob_real)
 	wf_sim = WavefunctionSimulator()
 	while not alice.secret_revealed:
@@ -55,27 +57,36 @@ def run(secret_ansatz: Callable[[Q], Program],
 		
 		protocol = address_qubits(protocol, addresses)
 		ep = qc.compile(protocol)
-		result = qc.run(ep)
+		run_output = qc.run(ep)
 
 		alice.reset()
 		for bob in bobs:
 			bob.reset()
 
-		result = np.reshape(result, (num_bobs, num_bobs))
+		run_output = np.reshape(run_output, (num_bobs, num_bobs))
 		if args.verbose:
-			print(result)
-		if verification_program(result):
+			print(run_output)
+		if verification_program(run_output):
 			if alice.secret_revealed:
+				results["True Positives"] += (len(consistent_cheating_bobs) + len(random_cheating_bobs)) == 0
+				results["False Positives"] += (len(consistent_cheating_bobs) + len(random_cheating_bobs)) > 0
 				print("SECRET REVEALED [{}]".format(wf_sim.wavefunction
 														(address_qubits
 															(secret_ansatz(alice.q_mat[0][0][0])))))
 			else:
 				print("RETRYING...")
 		else:
+			results["True Negatives"] += (len(consistent_cheating_bobs) + len(random_cheating_bobs)) > 0
+			results["False Negatives"] += (len(consistent_cheating_bobs) + len(random_cheating_bobs)) == 0
 			print("CHEATING DETECTED")
 			break
 
-	return result
+	return results
+
+
+def expand(d1, d2):
+	for k, v in d2.items():
+		d1[k] += v
 
 
 def tests():
@@ -84,6 +95,7 @@ def tests():
 		lambda q: Program() + X(q) + H(q)
 	]
 	
+	all_results = Counter()
 	for secret_ansatz in secret_ansatzs:
 		if args.run_all:
 			num_bobs_range = range(2, 4)
@@ -95,21 +107,21 @@ def tests():
 				return (results == results[0]).all()
 
 			def single_run(message, **kwargs):
-				print("=" * 90)
+				# print("=" * 90)
 				print("Running test with 1 Alice and {} Bobs, {}".format(num_bobs, message))
-				print("-" * 90)
-				run(**kwargs)
-				print("=" * 90)
+				# print("-" * 90)
+				expand(all_results, run(**kwargs))
+				# print("=" * 90)
 				print()
 
 			def combination_run(**kwargs):
-				print("=" * 70)
+				# print("=" * 70)
 				print("Running test with 1 Alice and {} Bobs,\n".format(num_bobs) +
 						"such that Bobs {} cheat with a consistent program\n".format(list_to_string(args.consistent_prog_cheaters)) +
 						"and {} with a random program:".format(list_to_string(args.random_prog_cheaters)))
-				print("-" * 70)
-				run(**kwargs)
-				print("=" * 70)
+				# print("-" * 70)
+				expand(all_results, run(**kwargs))
+				# print("=" * 70)
 				print()
 
 			if args.run_all:
@@ -148,6 +160,9 @@ def tests():
 				run(secret_ansatz, num_bobs=num_bobs, verification_program=verification_program)
 				print("=" * 70)
 				print()
+
+	for k, v in all_results.items():
+		print("{}: {}".format(k, v))
 			
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Rational Quantum Secret Sharing Scheme')
