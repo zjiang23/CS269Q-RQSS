@@ -56,7 +56,7 @@ def QFT_mat(n):
 
 def QFT_gate(n):
     # Get the Quil definition for the new gate
-    QFT_definition = DefGate("QFT", QFT_mat(2 ** n))
+    QFT_definition = DefGate("QFT{}".format(n), QFT_mat(2 ** n))
     # Get the gate constructor
     QFT = QFT_definition.get_constructor()
     return QFT, QFT_definition
@@ -70,11 +70,12 @@ def IQFT_mat(n):
             mat[i, j] = omega ** (-i * j)
 
     mat /= math.sqrt(float(n))
+    #print(mat.shape)
     return mat
 
 def IQFT_gate(n):
     # Get the Quil definition for the new gate
-    IQFT_definition = DefGate("IQFT", IQFT_mat(2 ** n))
+    IQFT_definition = DefGate("IQFT{}".format(n), IQFT_mat(2 ** n))
     # Get the gate constructor
     IQFT = IQFT_definition.get_constructor()
     return IQFT, IQFT_definition
@@ -89,9 +90,9 @@ def qft(phi, n):
     QFT, QFT_definition = QFT_gate(n)
     pq += QFT_definition
     if isinstance(phi, List):
-        pq += QFT(*phi)
+        pq += QFT(*phi) #Program("QFT({}) {}".format(n, *phi)) #QFT(*phi)
     else:
-        pq += QFT(phi)
+        pq += QFT(phi) #Program("QFT({}) {}".format(n, phi)) #QFT(phi)
     return pq
 
 # Inverse Fourier Transform
@@ -100,9 +101,9 @@ def iqft(phi, n):
     IQFT, IQFT_definition = IQFT_gate(n)
     pq += IQFT_definition
     if isinstance(phi, List):
-        pq += IQFT(*phi)
+        pq += IQFT(*phi) #Program("IQFT({}) {}".format(n, *phi)) #IQFT(*phi)
     else:
-        pq += IQFT(phi)
+        pq += IQFT(phi) #Program("IQFT({}) {}".format(n, phi)) #IQFT(phi)
     return pq
 
 ########################################
