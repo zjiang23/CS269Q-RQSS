@@ -1,7 +1,7 @@
 from typing import Dict, List, Callable, Union, Tuple
 from pyquil import Program
 from pyquil.quilatom import QubitPlaceholder
-from pyquil.api import get_qc
+from pyquil.api import get_qc, WavefunctionSimulator
 from pyquil.quil import address_qubits
 from pyquil.gates import I, X, Y, Z, H, RX, RY, RZ, MEASURE
 
@@ -19,16 +19,19 @@ def run(secret_ansatz: Callable[[Q], Program],
 		num_trials: int = 1,
 		verification_program: Callable[[np.array], bool] = lambda x: False):
 	alice = Alice(secret_ansatz, prob_real=alice_prob_real)
+	wf_sim = WavefunctionSimulator()
 	while not alice.secret_revealed:
 		protocol = Program()
 		bob_memories = protocol.declare('ro', 'BIT', num_bobs ** 2)
 		phi_dash_copies = alice.deal_shares(num_bobs)
+		print(wf_sim.wavefunction(address_qubits(secret_ansatz(alice.q_mat[0][0][0]))))
 		bobs = [Bob(shares=phi_dash_copies[curr_id],
 					memory=[bob_memories[curr_id * num_bobs + i] for i in range(num_bobs)],
-					self_id=curr_id)
+					self_id=curr_id,
+					is_cheater=(curr_id == 0))
 				for curr_id in range(num_bobs)]
 		
-		for bob in bobs:
+		for idx, bob in enumerate(bobs):
 			bob.set_bob_map(bobs)
 			bob.distribute_all_shares()
 		
@@ -45,20 +48,35 @@ def run(secret_ansatz: Callable[[Q], Program],
 						for i, qbyte in enumerate(alice.q_mat)
 							for j, qubit in enumerate(qbyte)}
 		# print(addresses)
+		# for i, qubit in enumerate(bobs[0].shares):
+		# 	addresses[qubit[0]] = num_bobs ** 2 + i
+		# print(addresses)
+		
 		protocol = address_qubits(protocol, addresses)
+		print("RESULTS")
+		for bob in bobs:
+			print(wf_sim.wavefunction(address_qubits(bob.protocol)))
+
+		print("OVERALL: ", wf_sim.wavefunction(address_qubits(protocol)))
 		# print(protocol)
 		ep = qc.compile(protocol)
 		result = qc.run(ep)
 
 		alice.reset()
 
+		# print("RESULTS")
+		# for bob in bobs:
+		# 	print(wf_sim.wavefunction(address_qubits(bob.protocol)))
+		# 	# print(wf_sim.wavefunction(address_qubits(Program() + I(bob.received_shares[0]))))
+
 		result = np.reshape(result, (num_bobs, num_bobs))
 		print(result)
 		# break
-		# Write verification code
-		results = result[:, 1:]
-		verified = (results == results[0]).all()
-		if verified: #verification_program(result):
+		
+		# results = result[:, 1:]
+		# verified = (results == results[0]).all()
+		
+		if verification_program(result):
 			if alice.secret_revealed:
 				print("SECRET REVEALED")
 			else:
@@ -67,14 +85,12 @@ def run(secret_ansatz: Callable[[Q], Program],
 			print("CHEATING DETECTED")
 			break
 
-		#if verified
-		#alice reveals if secret revealed
-		#else terminate program 
-
 	return result
 
 def tests():
-	secret_ansatz = lambda q: Program() + H(q)
+	secret_ansatz = lambda q: Program() + X(q)
+	# wf_sim = WavefunctionSimulator()
+	# print(wf_sim.wavefunction(address_qubits(pq)))
 	for num_bobs in range(2, 4):
 		def verification_program(results):
 			results = results[:, 1:]
