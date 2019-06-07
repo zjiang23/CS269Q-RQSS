@@ -24,7 +24,8 @@ def run(secret_ansatz: Callable[[Q], Program],
 		protocol = Program()
 		bob_memories = protocol.declare('ro', 'BIT', num_bobs ** 2)
 		phi_dash_copies = alice.deal_shares(num_bobs)
-		print(wf_sim.wavefunction(address_qubits(secret_ansatz(alice.q_mat[0][0][0]))))
+		print("Original secret:", wf_sim.wavefunction(address_qubits(secret_ansatz(alice.q_mat[0][0][0]))))
+
 		bobs = [Bob(shares=phi_dash_copies[curr_id],
 					memory=[bob_memories[curr_id * num_bobs + i] for i in range(num_bobs)],
 					self_id=curr_id,
@@ -47,35 +48,15 @@ def run(secret_ansatz: Callable[[Q], Program],
 		addresses = {qubit[0]: i * num_bobs + j
 						for i, qbyte in enumerate(alice.q_mat)
 							for j, qubit in enumerate(qbyte)}
-		# print(addresses)
-		# for i, qubit in enumerate(bobs[0].shares):
-		# 	addresses[qubit[0]] = num_bobs ** 2 + i
-		# print(addresses)
 		
 		protocol = address_qubits(protocol, addresses)
-		print("RESULTS")
-		for bob in bobs:
-			print(wf_sim.wavefunction(address_qubits(bob.protocol)))
-
-		print("OVERALL: ", wf_sim.wavefunction(address_qubits(protocol)))
-		# print(protocol)
 		ep = qc.compile(protocol)
 		result = qc.run(ep)
 
 		alice.reset()
 
-		# print("RESULTS")
-		# for bob in bobs:
-		# 	print(wf_sim.wavefunction(address_qubits(bob.protocol)))
-		# 	# print(wf_sim.wavefunction(address_qubits(Program() + I(bob.received_shares[0]))))
-
 		result = np.reshape(result, (num_bobs, num_bobs))
-		print(result)
-		# break
-		
-		# results = result[:, 1:]
-		# verified = (results == results[0]).all()
-		
+		# print(result)
 		if verification_program(result):
 			if alice.secret_revealed:
 				print("SECRET REVEALED")
@@ -97,18 +78,6 @@ def tests():
 			return (results == results[0]).all()
 
 		result = np.array(run(secret_ansatz, num_bobs=num_bobs, verification_program=verification_program))
-		# result = result.flatten()
-		# result[result == 0] = -1
-		# _sum = abs(np.sum(result[i] for i in range(num_bobs ** 2) if (i % 2 == 1)))
-		# passed = (_sum == num_bobs)
-
-		# result = np.reshape(result, (num_bobs, num_bobs))
-
-		# if passed:
-		# 	print("{} bobs: Passed".format(num_bobs))
-		# else:
-		# 	result[result == -1] = 0
-		# 	print("{} bobs: Failed with {} and sum {}".format(num_bobs, result, _sum))
 
 if __name__ == "__main__":
 	tests()
