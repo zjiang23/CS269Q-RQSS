@@ -26,7 +26,7 @@ def run(secret_ansatz: Callable[[Q], Program],
 		consistent_cheating_bobs: list = [],
 		random_cheating_bobs: list = []):
 	results = {"True Positives": 0, "False Positives": 0, "True Negatives": 0, "False Negatives": 0}
-	alice = Alice(secret_ansatz, prob_real=alice_prob_real)
+	alice = Alice(secret_ansatz, prob_real=args.alice_prob_real)
 	wf_sim = WavefunctionSimulator()
 	while not alice.secret_revealed:
 		protocol = Program()
@@ -187,6 +187,7 @@ if __name__ == "__main__":
 	parser.add_argument('-cheat', '--test_cheating', action='store_true', help='flag to test cheating [default: False]')
 	parser.add_argument('-c', '--consistent_prog_cheaters', nargs='*', type=int, help='indices of Bobs who cheat with consistent program [default: []]')
 	parser.add_argument('-r', '--random_prog_cheaters', nargs='*', type=int, help='indices of Bobs who cheat with random program [default: []]')
+	parser.add_argument('--alice_prob_real', type=float, default=0.4, help='the probability with which Alice reveals secret [default: 0.4')
 	parser.add_argument('-v', '--verbose', action='store_true', help='print all progress [default: False]')
 	parser.add_argument('-S', '--silent', action='store_true', help='silence all output [default: False]')
 	parser.add_argument('-s', '--only_summarize', action='store_true', help='silence all output except final output [default: False]')
