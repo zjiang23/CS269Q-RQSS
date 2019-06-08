@@ -68,7 +68,9 @@ def run(secret_ansatz: Callable[[Q], Program],
 
 		run_output = np.reshape(run_output, (num_bobs, num_bobs))
 		if args.verbose:
-			print(run_output)
+			print("If no Bobs are cheating, all single particles should be 1.")
+			for i in range(run_output.shape[0]):
+				print("Bob {} received single particles: {}".format(i + 1, run_output[i,1:].tolist().__str__()[1:-1]))
 		if verification_program(run_output):
 			if alice.secret_revealed:
 				results["True Positives"] += (len(consistent_cheating_bobs) + len(random_cheating_bobs)) == 0
