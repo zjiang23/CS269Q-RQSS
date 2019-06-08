@@ -1,12 +1,9 @@
-from typing import Dict, List, Callable, Union, Tuple
+from typing import Callable, Union
 from pyquil import Program
 from pyquil.quilatom import QubitPlaceholder
 from pyquil.api import get_qc, WavefunctionSimulator
 from pyquil.quil import address_qubits
-from pyquil.gates import I, X, Y, Z, H, RX, RY, RZ, MEASURE
-
-from qft import qft, iqft
-from entangle import init_p, entangle, disentangle
+from pyquil.gates import X, H
 from agents import Alice, Bob
 
 import numpy as np
@@ -19,7 +16,6 @@ import os
 Q = Union[int, QubitPlaceholder]
 
 def run(secret_ansatz: Callable[[Q], Program],
-		alice_prob_real: float = 0.4,
 		num_bobs: int = 2,
 		num_trials: int = 1,
 		verification_program: Callable[[np.array], bool] = lambda x: False,
@@ -32,7 +28,6 @@ def run(secret_ansatz: Callable[[Q], Program],
 		protocol = Program()
 		bob_memories = protocol.declare('ro', 'BIT', num_bobs ** 2)
 		phi_dash_copies = alice.deal_shares(num_bobs)
-		# print("Original secret:", wf_sim.wavefunction(address_qubits(secret_ansatz(alice.q_mat[0][0][0]))))
 
 		bobs = [Bob(shares=phi_dash_copies[curr_id],
 					memory=[bob_memories[curr_id * num_bobs + i] for i in range(num_bobs)],
@@ -79,7 +74,7 @@ def run(secret_ansatz: Callable[[Q], Program],
 														(address_qubits
 															(secret_ansatz(alice.q_mat[0][0][0])))))
 			else:
-				print("RETRYING...")
+				print("FAKE SECRET REVEALED, RETRYING...")
 		else:
 			results["True Negatives"] += (len(consistent_cheating_bobs) + len(random_cheating_bobs)) > 0
 			results["False Negatives"] += (len(consistent_cheating_bobs) + len(random_cheating_bobs)) == 0
@@ -132,17 +127,14 @@ def run_tests():
 
 				if args.run_all:
 					single_run("and no cheating Bobs", secret_ansatz=secret_ansatz,
-								num_bobs=num_bobs, verification_program=verification_program,
-								alice_prob_real=args.alice_prob_real)
+								num_bobs=num_bobs, verification_program=verification_program)
 					for i in range(num_bobs):
 						single_run("such that Bob {} cheats with a consistent program:".format(num_bobs, i),
 									secret_ansatz=secret_ansatz, num_bobs=num_bobs,
-									verification_program=verification_program, consistent_cheating_bobs=[i],
-									alice_prob_real=args.alice_prob_real)
+									verification_program=verification_program, consistent_cheating_bobs=[i])
 						single_run("such that Bob {} cheats with a random program:".format(num_bobs, i),
 									secret_ansatz=secret_ansatz, num_bobs=num_bobs,
-									verification_program=verification_program, random_cheating_bobs=[i],
-									alice_prob_real=args.alice_prob_real)
+									verification_program=verification_program, random_cheating_bobs=[i])
 
 				elif args.test_cheating:
 					def list_to_string(l):
@@ -160,14 +152,13 @@ def run_tests():
 							return s + " cheat"
 
 					combination_run(secret_ansatz=secret_ansatz, num_bobs=num_bobs, verification_program=verification_program,
-									consistent_cheating_bobs=args.consistent_prog_cheaters, random_cheating_bobs=args.random_prog_cheaters,
-									alice_prob_real=args.alice_prob_real)
+									consistent_cheating_bobs=args.consistent_prog_cheaters, random_cheating_bobs=args.random_prog_cheaters)
 
 				else:
 					# print("=" * 70)
 					print("Running test with 1 Alice and {} Bobs, and no cheating Bobs:".format(num_bobs))
 					# print("-" * 70)
-					run(secret_ansatz, num_bobs=num_bobs, verification_program=verification_program, alice_prob_real=args.alice_prob_real)
+					run(secret_ansatz, num_bobs=num_bobs, verification_program=verification_program)
 					# print("=" * 70)
 					print()
 
@@ -193,7 +184,6 @@ if __name__ == "__main__":
 	parser.add_argument('-cheat', '--test_cheating', action='store_true', help='flag to test cheating [default: False]')
 	parser.add_argument('-c', '--consistent_prog_cheaters', nargs='*', type=int, help='indices of Bobs who cheat with consistent program [default: []]')
 	parser.add_argument('-r', '--random_prog_cheaters', nargs='*', type=int, help='indices of Bobs who cheat with random program [default: []]')
-	parser.add_argument('--alice_prob_real', type=float, default=0.4, help='the probability with which Alice reveals secret [default: 0.4')
 	parser.add_argument('-v', '--verbose', action='store_true', help='print all progress [default: False]')
 	parser.add_argument('-S', '--silent', action='store_true', help='silence all output [default: False]')
 	parser.add_argument('-s', '--only_summarize', action='store_true', help='silence all output except final output [default: False]')
