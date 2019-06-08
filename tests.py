@@ -68,7 +68,9 @@ def run(secret_ansatz: Callable[[Q], Program],
 
 		run_output = np.reshape(run_output, (num_bobs, num_bobs))
 		if args.verbose:
-			print(run_output)
+			print("If no Bobs are cheating, all single particles should be 1.")
+			for i in range(run_output.shape[0]):
+				print("Bob {} received single particles: {}".format(i + 1, run_output[i,1:].tolist().__str__()[1:-1]))
 		if verification_program(run_output):
 			if alice.secret_revealed:
 				results["True Positives"] += (len(consistent_cheating_bobs) + len(random_cheating_bobs)) == 0
@@ -130,14 +132,17 @@ def run_tests():
 
 				if args.run_all:
 					single_run("and no cheating Bobs", secret_ansatz=secret_ansatz,
-								num_bobs=num_bobs, verification_program=verification_program)
+								num_bobs=num_bobs, verification_program=verification_program,
+								alice_prob_real=args.alice_prob_real)
 					for i in range(num_bobs):
 						single_run("such that Bob {} cheats with a consistent program:".format(num_bobs, i),
 									secret_ansatz=secret_ansatz, num_bobs=num_bobs,
-									verification_program=verification_program, consistent_cheating_bobs=[i])
+									verification_program=verification_program, consistent_cheating_bobs=[i],
+									alice_prob_real=args.alice_prob_real)
 						single_run("such that Bob {} cheats with a random program:".format(num_bobs, i),
 									secret_ansatz=secret_ansatz, num_bobs=num_bobs,
-									verification_program=verification_program, random_cheating_bobs=[i])
+									verification_program=verification_program, random_cheating_bobs=[i],
+									alice_prob_real=args.alice_prob_real)
 
 				elif args.test_cheating:
 					def list_to_string(l):
@@ -155,13 +160,14 @@ def run_tests():
 							return s + " cheat"
 
 					combination_run(secret_ansatz=secret_ansatz, num_bobs=num_bobs, verification_program=verification_program,
-									consistent_cheating_bobs=args.consistent_prog_cheaters, random_cheating_bobs=args.random_prog_cheaters)
+									consistent_cheating_bobs=args.consistent_prog_cheaters, random_cheating_bobs=args.random_prog_cheaters,
+									alice_prob_real=args.alice_prob_real)
 
 				else:
 					# print("=" * 70)
 					print("Running test with 1 Alice and {} Bobs, and no cheating Bobs:".format(num_bobs))
 					# print("-" * 70)
-					run(secret_ansatz, num_bobs=num_bobs, verification_program=verification_program)
+					run(secret_ansatz, num_bobs=num_bobs, verification_program=verification_program, alice_prob_real=args.alice_prob_real)
 					# print("=" * 70)
 					print()
 
@@ -191,7 +197,7 @@ if __name__ == "__main__":
 	parser.add_argument('-v', '--verbose', action='store_true', help='print all progress [default: False]')
 	parser.add_argument('-S', '--silent', action='store_true', help='silence all output [default: False]')
 	parser.add_argument('-s', '--only_summarize', action='store_true', help='silence all output except final output [default: False]')
-
+	parser.add_argument('-p', '--alice_prob_real', type=float, default=0.4, help='probability that Alice generates the true secret')
 	args = parser.parse_args()
 	if args.silent or args.only_summarize:
 		silence_console_out()
