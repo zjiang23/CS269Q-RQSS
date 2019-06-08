@@ -13,6 +13,9 @@ import numpy as np
 import argparse
 from collections import Counter
 
+import sys
+import os
+
 Q = Union[int, QubitPlaceholder]
 
 def run(secret_ansatz: Callable[[Q], Program],
@@ -89,89 +92,107 @@ def expand(d1, d2):
 		d1[k] += v
 
 
-def tests():
+def run_tests():
 	secret_ansatzs = [
 		#lambda q: Program() + X(q),
 		lambda q: Program() + X(q) + H(q)
 	]
 	
 	all_results = Counter()
-	for secret_ansatz in secret_ansatzs:
-		if args.run_all:
-			num_bobs_range = range(2, 4)
-		else:
-			num_bobs_range = [args.num_bobs]
-		for num_bobs in num_bobs_range:
-			def verification_program(results):
-				results = results[:, 1:]
-				return (results == results[0]).all()
-
-			def single_run(message, **kwargs):
-				# print("=" * 90)
-				print("Running test with 1 Alice and {} Bobs, {}".format(num_bobs, message))
-				# print("-" * 90)
-				expand(all_results, run(**kwargs))
-				# print("=" * 90)
-				print()
-
-			def combination_run(**kwargs):
-				# print("=" * 70)
-				print("Running test with 1 Alice and {} Bobs,\n".format(num_bobs) +
-						"such that Bobs {} cheat with a consistent program\n".format(list_to_string(args.consistent_prog_cheaters)) +
-						"and {} with a random program:".format(list_to_string(args.random_prog_cheaters)))
-				# print("-" * 70)
-				expand(all_results, run(**kwargs))
-				# print("=" * 70)
-				print()
-
+	for _ in range(args.num_runs):
+		for secret_ansatz in secret_ansatzs:
 			if args.run_all:
-				single_run("and no cheating Bobs", secret_ansatz=secret_ansatz,
-							num_bobs=num_bobs, verification_program=verification_program)
-				for i in range(num_bobs):
-					single_run("such that Bob {} cheats with a consistent program:".format(num_bobs, i),
-								secret_ansatz=secret_ansatz, num_bobs=num_bobs,
-								verification_program=verification_program, consistent_cheating_bobs=[i])
-					single_run("such that Bob {} cheats with a random program:".format(num_bobs, i),
-								secret_ansatz=secret_ansatz, num_bobs=num_bobs,
-								verification_program=verification_program, random_cheating_bobs=[i])
-
-			elif args.test_cheating:
-				def list_to_string(l):
-					if len(l) < 0:
-						return "No Bobs cheat"
-					elif len(l) == 1:
-						return "Bob " + str(l[0]) + " cheats"
-					elif len(l) == 2:
-						return "Bobs " + str(l[0]) + " and " + str(l[1]) + " cheat"
-					else:
-						s = "Bobs "
-						for e in l[:-1]:
-							s += str(e) + ", "
-						s += "and " + str(l[-1])
-						return s + " cheat"
-
-				combination_run(secret_ansatz=secret_ansatz, num_bobs=num_bobs, verification_program=verification_program,
-								consistent_cheating_bobs=args.consistent_prog_cheaters, random_cheating_bobs=args.random_prog_cheaters)
-
+				num_bobs_range = range(2, 4)
 			else:
-				# print("=" * 70)
-				print("Running test with 1 Alice and {} Bobs, and no cheating Bobs:".format(num_bobs))
-				# print("-" * 70)
-				run(secret_ansatz, num_bobs=num_bobs, verification_program=verification_program)
-				# print("=" * 70)
-				print()
+				num_bobs_range = [args.num_bobs]
+			for num_bobs in num_bobs_range:
+				def verification_program(results):
+					results = results[:, 1:]
+					return (results == results[0]).all()
+
+				def single_run(message, **kwargs):
+					# print("=" * 90)
+					print("Running test with 1 Alice and {} Bobs, {}".format(num_bobs, message))
+					# print("-" * 90)
+					expand(all_results, run(**kwargs))
+					# print("=" * 90)
+					print()
+
+				def combination_run(**kwargs):
+					# print("=" * 70)
+					print("Running test with 1 Alice and {} Bobs,\n".format(num_bobs) +
+							"such that Bobs {} cheat with a consistent program\n".format(list_to_string(args.consistent_prog_cheaters)) +
+							"and {} with a random program:".format(list_to_string(args.random_prog_cheaters)))
+					# print("-" * 70)
+					expand(all_results, run(**kwargs))
+					# print("=" * 70)
+					print()
+
+				if args.run_all:
+					single_run("and no cheating Bobs", secret_ansatz=secret_ansatz,
+								num_bobs=num_bobs, verification_program=verification_program)
+					for i in range(num_bobs):
+						single_run("such that Bob {} cheats with a consistent program:".format(num_bobs, i),
+									secret_ansatz=secret_ansatz, num_bobs=num_bobs,
+									verification_program=verification_program, consistent_cheating_bobs=[i])
+						single_run("such that Bob {} cheats with a random program:".format(num_bobs, i),
+									secret_ansatz=secret_ansatz, num_bobs=num_bobs,
+									verification_program=verification_program, random_cheating_bobs=[i])
+
+				elif args.test_cheating:
+					def list_to_string(l):
+						if len(l) < 0:
+							return "No Bobs cheat"
+						elif len(l) == 1:
+							return "Bob " + str(l[0]) + " cheats"
+						elif len(l) == 2:
+							return "Bobs " + str(l[0]) + " and " + str(l[1]) + " cheat"
+						else:
+							s = "Bobs "
+							for e in l[:-1]:
+								s += str(e) + ", "
+							s += "and " + str(l[-1])
+							return s + " cheat"
+
+					combination_run(secret_ansatz=secret_ansatz, num_bobs=num_bobs, verification_program=verification_program,
+									consistent_cheating_bobs=args.consistent_prog_cheaters, random_cheating_bobs=args.random_prog_cheaters)
+
+				else:
+					# print("=" * 70)
+					print("Running test with 1 Alice and {} Bobs, and no cheating Bobs:".format(num_bobs))
+					# print("-" * 70)
+					run(secret_ansatz, num_bobs=num_bobs, verification_program=verification_program)
+					# print("=" * 70)
+					print()
+
+	if args.only_summarize and not args.silent:
+		enable_console_out()
 
 	for k, v in all_results.items():
 		print("{}: {}".format(k, v))
-			
+
+
+def silence_console_out():
+	sys.stdout = open(os.devnull, 'w')
+
+def enable_console_out():
+	sys.stdout = sys.__stdout__
+
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Rational Quantum Secret Sharing Scheme')
-	parser.add_argument('-a', '--run_all', action='store_false', help='flag to run all tests')
+	parser.add_argument('-N', '--num_runs', metavar='N', type=int, default=1, help='number of times to run same test [default: 1]')
+	parser.add_argument('-a', '--run_all', action='store_true', help='flag to run all tests')
 	parser.add_argument('-n', '--num_bobs', metavar='n', type=int, default=3, help='number of Bobs (receiving agents) [default: 3]')
 	parser.add_argument('-cheat', '--test_cheating', action='store_true', help='flag to test cheating [default: False]')
 	parser.add_argument('-c', '--consistent_prog_cheaters', nargs='*', type=int, help='indices of Bobs who cheat with consistent program [default: []]')
 	parser.add_argument('-r', '--random_prog_cheaters', nargs='*', type=int, help='indices of Bobs who cheat with random program [default: []]')
-	parser.add_argument('-v', '--verbose', action='store_true', help='print progress [default: False]')
+	parser.add_argument('-v', '--verbose', action='store_true', help='print all progress [default: False]')
+	parser.add_argument('-S', '--silent', action='store_true', help='silence all output [default: False]')
+	parser.add_argument('-s', '--only_summarize', action='store_true', help='silence all output except final output [default: False]')
 
 	args = parser.parse_args()
-	tests()
+	if args.silent or args.only_summarize:
+		silence_console_out()
+	
+	run_tests()
