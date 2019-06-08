@@ -114,9 +114,9 @@ class Bob:
 		assert self.bob_map is not None, "You must set bob map before distributing shares."
 		for share_idx, share in enumerate(self.shares):
 			if self.is_consistent_cheater:
-				self.protocol += self.random_cheating_ansatz(share[0])
-			elif self.is_random_cheater:
 				self.protocol += self.consistent_cheating_ansatz(share[0])
+			elif self.is_random_cheater:
+				self.protocol += self.random_cheating_ansatz(share[0])
 			self.bob_map[share[1]].receive_share(share, share_idx)
 
 	def retrieve(self, num_bobs: int) -> Program:

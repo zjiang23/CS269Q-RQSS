@@ -154,11 +154,11 @@ def tests():
 								consistent_cheating_bobs=args.consistent_prog_cheaters, random_cheating_bobs=args.random_prog_cheaters)
 
 			else:
-				print("=" * 70)
+				# print("=" * 70)
 				print("Running test with 1 Alice and {} Bobs, and no cheating Bobs:".format(num_bobs))
-				print("-" * 70)
+				# print("-" * 70)
 				run(secret_ansatz, num_bobs=num_bobs, verification_program=verification_program)
-				print("=" * 70)
+				# print("=" * 70)
 				print()
 
 	for k, v in all_results.items():
@@ -166,7 +166,7 @@ def tests():
 			
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Rational Quantum Secret Sharing Scheme')
-	parser.add_argument('-a', '--run_all', action='store_true', help='flag to run all tests')
+	parser.add_argument('-a', '--run_all', action='store_false', help='flag to run all tests')
 	parser.add_argument('-n', '--num_bobs', metavar='n', type=int, default=3, help='number of Bobs (receiving agents) [default: 3]')
 	parser.add_argument('-cheat', '--test_cheating', action='store_true', help='flag to test cheating [default: False]')
 	parser.add_argument('-c', '--consistent_prog_cheaters', nargs='*', type=int, help='indices of Bobs who cheat with consistent program [default: []]')
