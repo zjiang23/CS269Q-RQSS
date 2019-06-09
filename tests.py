@@ -12,6 +12,7 @@ from collections import Counter
 
 import sys
 import os
+from tqdm import tqdm
 
 Q = Union[int, QubitPlaceholder]
 
@@ -95,8 +96,8 @@ def run_tests():
 		lambda q: Program() + X(q) + H(q)
 	]
 	
-	all_results = Counter()
-	for _ in range(args.num_runs):
+	all_results = Counter() #{"True Positives": 0, "False Positives": 0, "True Negatives": 0, "False Negatives": 0}
+	for _ in tqdm(range(args.num_runs)):
 		for secret_ansatz in secret_ansatzs:
 			if args.run_all:
 				num_bobs_range = range(2, 4)
@@ -155,12 +156,8 @@ def run_tests():
 									consistent_cheating_bobs=args.consistent_prog_cheaters, random_cheating_bobs=args.random_prog_cheaters)
 
 				else:
-					# print("=" * 70)
-					print("Running test with 1 Alice and {} Bobs, and no cheating Bobs:".format(num_bobs))
-					# print("-" * 70)
-					run(secret_ansatz, num_bobs=num_bobs, verification_program=verification_program)
-					# print("=" * 70)
-					print()
+					single_run("and no cheating Bobs", secret_ansatz=secret_ansatz,
+								num_bobs=num_bobs, verification_program=verification_program)
 
 	if args.only_summarize and not args.silent:
 		enable_console_out()
