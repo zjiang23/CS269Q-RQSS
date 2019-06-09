@@ -1,5 +1,5 @@
 # Rational Quantum Secret Sharing in PyQuil
-[Stanford CS269Q](https://cs269q.stanford.edu/) (Spring 2019) Final Project [[Project Report](https://github.com/zjiang23/CS269Q-QSS/blob/master/cs269q_rqss_project_report.pdf)]
+[Stanford CS269Q](https://cs269q.stanford.edu/) (Spring 2019) Final Project [[Project Report](https://github.com/zjiang23/CS269Q-RQSS/blob/master/CS%20269Q%20-%20Final%20Project.pdf)]
 by Manan Rai, Andrew Tierno, and Jerry Zhilin Jiang
 
 PyQuil implementation of Rational Quantum Secret Sharing (RQSS), based on the [Qin et al. (2018)](https://www.nature.com/articles/s41598-018-29051-z) paper.
